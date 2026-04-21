@@ -4,7 +4,6 @@ import pdfjsLib from "./lib/pdf";
 import { buildPageFilename } from "./utils/buildPageFilename";
 
 import Header from "./components/Header";
-import AlertMessage from "./components/AlertMessage";
 import UploadZone from "./components/UploadZone";
 import SettingsPanel from "./components/SettingsPanel";
 import ActionControls from "./components/ActionControls";
@@ -14,6 +13,7 @@ import PageNamesEditor from "./components/PageNamesEditor";
 import PageGrid from "./components/PageGrid";
 import EmptyState from "./components/EmptyState";
 import Footer from "./components/Footer";
+import { Toaster, toast } from "react-hot-toast";
 
 const supportsFilePicker =
   typeof window !== "undefined" && "showDirectoryPicker" in window;
@@ -23,8 +23,6 @@ export default function App() {
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState(null);
-  const [info, setInfo] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [scale, setScale] = useState(2);
   const [totalPages, setTotalPages] = useState(0);
@@ -47,7 +45,7 @@ export default function App() {
   useEffect(() => {
     if (file) {
       setZipName(
-        file.name.replace(/\.pdf$/i, "").replace(/\s+/g, "_") || "pdf_pages"
+        file.name.replace(/\.pdf$/i, "").replace(/\s+/g, "_") || "pdf_pages",
       );
     }
   }, [file]);
@@ -59,19 +57,17 @@ export default function App() {
         buildPageFilename(pageTemplate, pageNum, total || totalPages)
       );
     },
-    [pageNames, pageTemplate, totalPages]
+    [pageNames, pageTemplate, totalPages],
   );
 
   const handleFile = useCallback((f) => {
     if (!f || f.type !== "application/pdf") {
-      setError("Please upload a valid PDF file.");
+      toast.error("Please upload a valid PDF file.");
       return;
     }
 
     setFile(f);
     setPages([]);
-    setError(null);
-    setInfo(null);
     setProgress(0);
     setTotalPages(0);
     setPageNames({});
@@ -84,14 +80,14 @@ export default function App() {
       setDragOver(false);
       handleFile(e.dataTransfer.files[0]);
     },
-    [handleFile]
+    [handleFile],
   );
 
   const pickDir = async () => {
     if (!supportsFilePicker) {
-      setInfo(
-        "Folder picker requires Chrome or Edge 86+. Files will go to your Downloads folder instead."
-      );
+      toast("Folder picker requires Chrome or Edge 86+. Files will go to your Downloads folder instead.", {
+        icon: "ℹ️",
+      });
       return;
     }
 
@@ -99,10 +95,10 @@ export default function App() {
       const h = await window.showDirectoryPicker({ mode: "readwrite" });
       setDirHandle(h);
       setFallbackPath("");
-      setInfo(`Folder selected: "${h.name}"`);
+      toast.success(`Folder selected: "${h.name}"`);
     } catch (e) {
       if (e.name !== "AbortError") {
-        setError("Could not access folder: " + e.message);
+        toast.error("Could not access folder: " + e.message);
       }
     }
   };
@@ -112,8 +108,6 @@ export default function App() {
 
     setLoading(true);
     setPages([]);
-    setError(null);
-    setInfo(null);
     setProgress(0);
     setPageNames({});
     setShowNames(false);
@@ -151,7 +145,7 @@ export default function App() {
         setPages([...result]);
       }
     } catch (e) {
-      setError("Failed to process PDF: " + e.message);
+      toast.error("Failed to process PDF: " + e.message);
     } finally {
       setLoading(false);
     }
@@ -166,10 +160,10 @@ export default function App() {
         const w = await fh.createWritable();
         await w.write(await (await fetch(page.dataUrl)).blob());
         await w.close();
-        setInfo(`Saved: ${fname} → ${dirHandle.name}/`);
+        toast.success(`Saved: ${fname} → ${dirHandle.name}/`);
         return;
       } catch (e) {
-        setError("Save failed: " + e.message);
+        toast.error("Save failed: " + e.message);
         return;
       }
     }
@@ -180,77 +174,66 @@ export default function App() {
     a.click();
   };
 
-const saveAll = async () => {
-  if (!pages.length) {
-    setError("No pages available to save.");
-    return;
-  }
-
-  setDlAll(true);
-  setError(null);
-  setInfo(null);
-
-  try {
-    console.log("SAVE ALL clicked");
-    console.log("Pages:", pages);
-
-    const zip = new JSZip();
-    const finalZip =
-      (zipName.trim() || "pdf_pages").replace(/\.zip$/i, "") + ".zip";
-
-    pages.forEach((p) => {
-      const fname = getFilename(p.pageNum, totalPages) + ".png";
-
-      if (!p.dataUrl || !p.dataUrl.includes(",")) {
-        throw new Error(`Invalid image data for page ${p.pageNum}`);
-      }
-
-      zip.file(fname, p.dataUrl.split(",")[1], { base64: true });
-    });
-
-    const blob = await zip.generateAsync({ type: "blob" });
-
-    console.log("ZIP blob created:", blob);
-
-    if (dirHandle) {
-      try {
-        const fh = await dirHandle.getFileHandle(finalZip, { create: true });
-        const w = await fh.createWritable();
-        await w.write(blob);
-        await w.close();
-        setInfo(`Saved "${finalZip}" → ${dirHandle.name}/`);
-        return;
-      } catch (e) {
-        console.error("Folder save failed:", e);
-        setError("Folder save failed: " + e.message);
-        return;
-      }
+  const saveAll = async () => {
+    if (!pages.length) {
+      toast.error("No pages available to save.");
+      return;
     }
 
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = finalZip;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    setDlAll(true);
 
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    try {
+      const zip = new JSZip();
+      const finalZip =
+        (zipName.trim() || "pdf_pages").replace(/\.zip$/i, "") + ".zip";
 
-    setInfo(`"${finalZip}" downloaded successfully.`);
-  } catch (e) {
-    console.error("ZIP download failed:", e);
-    setError("Download failed: " + e.message);
-  } finally {
-    setDlAll(false);
-  }
-};
+      pages.forEach((p) => {
+        const fname = getFilename(p.pageNum, totalPages) + ".png";
+
+        if (!p.dataUrl || !p.dataUrl.includes(",")) {
+          throw new Error(`Invalid image data for page ${p.pageNum}`);
+        }
+
+        zip.file(fname, p.dataUrl.split(",")[1], { base64: true });
+      });
+
+      const blob = await zip.generateAsync({ type: "blob" });
+
+      if (dirHandle) {
+        try {
+          const fh = await dirHandle.getFileHandle(finalZip, { create: true });
+          const w = await fh.createWritable();
+          await w.write(blob);
+          await w.close();
+          toast.success(`Saved "${finalZip}" → ${dirHandle.name}/`);
+          return;
+        } catch (e) {
+          toast.error("Folder save failed: " + e.message);
+          return;
+        }
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = finalZip;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+      toast.success(`"${finalZip}" downloaded successfully.`);
+    } catch (e) {
+      toast.error("Download failed: " + e.message);
+    } finally {
+      setDlAll(false);
+    }
+  };
 
   const reset = () => {
     setFile(null);
     setPages([]);
-    setError(null);
-    setInfo(null);
     setProgress(0);
     setTotalPages(0);
     setPageNames({});
@@ -262,19 +245,30 @@ const saveAll = async () => {
     }
   };
 
-  const previewPage = buildPageFilename(pageTemplate, 1, totalPages || 5) + ".png";
-  const previewZip = (zipName.trim() || "pdf_pages").replace(/\.zip$/i, "") + ".zip";
+  const previewPage =
+    buildPageFilename(pageTemplate, 1, totalPages || 5) + ".png";
+  const previewZip =
+    (zipName.trim() || "pdf_pages").replace(/\.zip$/i, "") + ".zip";
 
   return (
     <div className="app">
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            background: "#111118",
+            color: "#ffdc64",
+            border: "1px solid #1e1e28",
+            fontFamily: "DM Mono, monospace",
+            fontSize: "12px",
+          },
+        }}
+      />
       <div className="bg-grid" />
       <div className="bg-glow" />
 
       <div className="wrap">
         <Header />
-
-        <AlertMessage type="error" message={error} />
-        <AlertMessage type="info" message={info} />
 
         <UploadZone
           file={file}
@@ -315,7 +309,12 @@ const saveAll = async () => {
 
         <ProgressBar loading={loading} progress={progress} />
 
-        <StatsBar pages={pages} scale={scale} file={file} dirHandle={dirHandle} />
+        <StatsBar
+          pages={pages}
+          scale={scale}
+          file={file}
+          dirHandle={dirHandle}
+        />
 
         <PageNamesEditor
           pages={pages}
@@ -335,7 +334,7 @@ const saveAll = async () => {
           totalPages={totalPages}
         />
 
-        <EmptyState loading={loading} pages={pages} error={error} />
+        <EmptyState loading={loading} pages={pages} />
 
         <Footer />
       </div>
