@@ -1,15 +1,16 @@
-import { Github, Linkedin } from "lucide-react";
-
 export default function Footer() {
   return (
-    <footer className="mt-20 border-t border-[#1e1e28] pt-6 pb-4">
+    <div className="mt-20 border-t border-[#1e1e28] pt-6 pb-4">
       <div className="flex items-center justify-between flex-wrap gap-4">
+
+        {/* Left */}
         <div className="text-[10px] text-[#6b6558] uppercase tracking-[0.12em]">
           PDF Extractor
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 bg-[#ffdc64] flex items-center justify-center font-extrabold text-[#0a0a0f]">
+        {/* Center */}
+        <div className="flex items-center gap-4 ml-2">
+          <div className="w-7 h-7 bg-[#ffdc64] flex items-center justify-center font-extrabold text-[#0a0a0f] mr-1">
             T
           </div>
           <span className="font-['Syne'] text-base font-extrabold tracking-tight">
@@ -17,14 +18,16 @@ export default function Footer() {
           </span>
         </div>
 
-        <div className="flex items-center gap-4 text-[#6b6558]">
+        {/* Right */}
+        <div className="flex items-center gap-4 text-[#6b6558] text-sm">
+
           <a
             href="https://github.com/shariftasrik"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-[#ffdc64] transition"
           >
-            <Github size={18} />
+            GitHub
           </a>
 
           <a
@@ -33,7 +36,7 @@ export default function Footer() {
             rel="noopener noreferrer"
             className="hover:text-[#ffdc64] transition"
           >
-            X
+            Twitter
           </a>
 
           <a
@@ -42,10 +45,12 @@ export default function Footer() {
             rel="noopener noreferrer"
             className="hover:text-[#ffdc64] transition"
           >
-            <Linkedin size={18} />
+            LinkedIn
           </a>
+
         </div>
+
       </div>
-    </footer>
+    </div>
   );
 }

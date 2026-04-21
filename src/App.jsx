@@ -13,6 +13,7 @@ import StatsBar from "./components/StatsBar";
 import PageNamesEditor from "./components/PageNamesEditor";
 import PageGrid from "./components/PageGrid";
 import EmptyState from "./components/EmptyState";
+import Footer from "./components/Footer";
 
 const supportsFilePicker =
   typeof window !== "undefined" && "showDirectoryPicker" in window;
@@ -317,6 +318,8 @@ export default function App() {
         />
 
         <EmptyState loading={loading} pages={pages} error={error} />
+
+        <Footer />
       </div>
     </div>
   );
