@@ -180,53 +180,71 @@ export default function App() {
     a.click();
   };
 
-  const saveAll = async () => {
-    if (!pages.length) return;
+const saveAll = async () => {
+  if (!pages.length) {
+    setError("No pages available to save.");
+    return;
+  }
 
-    setDlAll(true);
-    setError(null);
-    setInfo(null);
+  setDlAll(true);
+  setError(null);
+  setInfo(null);
 
-    try {
-      const zip = new JSZip();
-      const finalZip = (zipName.trim() || "pdf_pages").replace(/\.zip$/i, "") + ".zip";
+  try {
+    console.log("SAVE ALL clicked");
+    console.log("Pages:", pages);
 
-      pages.forEach((p) => {
-        const fname = getFilename(p.pageNum, totalPages) + ".png";
-        zip.file(fname, p.dataUrl.split(",")[1], { base64: true });
-      });
+    const zip = new JSZip();
+    const finalZip =
+      (zipName.trim() || "pdf_pages").replace(/\.zip$/i, "") + ".zip";
 
-      const blob = await zip.generateAsync({ type: "blob" });
+    pages.forEach((p) => {
+      const fname = getFilename(p.pageNum, totalPages) + ".png";
 
-      if (dirHandle) {
-        try {
-          const fh = await dirHandle.getFileHandle(finalZip, { create: true });
-          const w = await fh.createWritable();
-          await w.write(blob);
-          await w.close();
-          setInfo(`✓ Saved "${finalZip}" → ${dirHandle.name}/`);
-          setDlAll(false);
-          return;
-        } catch (e) {
-          setError("Folder save failed: " + e.message);
-          setDlAll(false);
-          return;
-        }
+      if (!p.dataUrl || !p.dataUrl.includes(",")) {
+        throw new Error(`Invalid image data for page ${p.pageNum}`);
       }
 
-      const a = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      a.href = url;
-      a.download = finalZip;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setInfo(`✓ "${finalZip}" sent to your Downloads folder.`);
-    } catch (e) {
-      setError("Download failed: " + e.message);
-    } finally {
-      setDlAll(false);
+      zip.file(fname, p.dataUrl.split(",")[1], { base64: true });
+    });
+
+    const blob = await zip.generateAsync({ type: "blob" });
+
+    console.log("ZIP blob created:", blob);
+
+    if (dirHandle) {
+      try {
+        const fh = await dirHandle.getFileHandle(finalZip, { create: true });
+        const w = await fh.createWritable();
+        await w.write(blob);
+        await w.close();
+        setInfo(`Saved "${finalZip}" → ${dirHandle.name}/`);
+        return;
+      } catch (e) {
+        console.error("Folder save failed:", e);
+        setError("Folder save failed: " + e.message);
+        return;
+      }
     }
-  };
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = finalZip;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+    setInfo(`"${finalZip}" downloaded successfully.`);
+  } catch (e) {
+    console.error("ZIP download failed:", e);
+    setError("Download failed: " + e.message);
+  } finally {
+    setDlAll(false);
+  }
+};
 
   const reset = () => {
     setFile(null);
