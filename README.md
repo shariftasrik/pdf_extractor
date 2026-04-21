@@ -1,16 +1,84 @@
-# React + Vite
+# 📄 PDF → Pages (PDF Extractor)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Extract every page of a PDF as high-quality PNG images — with full control over naming, quality, and export.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 For Users
 
-## React Compiler
+### ✨ What this app does
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Upload any PDF file
+- Extract each page as a PNG image
+- Customize file names (e.g. `page_001.png`)
+- Download all pages as a ZIP
+- Preview pages before downloading
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 🧑‍💻 How to use
+
+1. Upload your PDF (drag & drop or click)
+2. Choose settings:
+   - **Render Quality** (1x–4x)
+   - **File Naming Format**
+3. Click **"Extract Pages"**
+4. Download:
+   - Individual pages, or
+   - All pages as a ZIP
+
+---
+
+### 🧠 File naming tips
+
+You can use:
+
+- `{page}` → page number (1, 2, 3…)
+- `{padded}` → 001, 002, 003…
+- `{total}` → total pages
+
+Example:
+page_{padded}
+→ page_001.png
+
+
+---
+
+### 📁 Download behavior
+
+- Default: files download to your browser’s **Downloads folder**
+- Chrome/Edge: you can pick a custom folder
+
+---
+
+## 🛠️ For Developers
+
+### ⚙️ Tech Stack
+
+- React (Vite)
+- Tailwind CSS v4
+- pdfjs-dist (PDF rendering)
+- JSZip (ZIP creation)
+
+---
+
+### 📂 Project Structure
+
+- src/
+- components/
+- lib/
+- pdf.js
+- utils/
+- buildPageFilename.js
+- App.jsx
+- main.jsx
+- App.css
+- index.css
+
+---
+
+### ▶️ Run locally
+
+```bash
+npm install
+npm run dev
